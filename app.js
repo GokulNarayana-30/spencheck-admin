@@ -61,6 +61,9 @@ const ICONS = {
   verified: '<path d="M12 2l2.4 2.1 3.2-.4.9 3.1 2.8 1.6-1.2 3 1.2 3-2.8 1.6-.9 3.1-3.2-.4L12 22l-2.4-2.1-3.2.4-.9-3.1-2.8-1.6 1.2-3-1.2-3 2.8-1.6.9-3.1 3.2.4z"/><path d="m8.5 12 2.5 2.5 4.5-5" stroke="white"/>',
   update: '<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>',
   bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/>',
+  feedback: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8M8 13h5"/>',
+  spark: '<path d="M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.4z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>',
+  mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
   image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/>',
 };
 const icon = (name, cls = '') => `<svg class="i ${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] || ''}</svg>`;
@@ -239,6 +242,7 @@ const PAGES = {
   messages: { label: 'Messages', icon: 'messages', sub: 'Chat with users as the verified Spencheck account', render: () => renderMessages() },
   notifications: { label: 'Notifications', icon: 'bell', sub: 'Push a notification to every phone, or to one user', render: () => renderNotifications() },
   promotions: { label: 'Banners & popups', icon: 'promo', sub: 'Changes reach phones on their next app start — no update needed', render: () => renderPromotions() },
+  feedback: { label: 'Feedback', icon: 'feedback', sub: 'Bug reports, ideas and questions from Help & feedback', render: () => renderFeedback() },
   reports: { label: 'Reports', icon: 'flag', sub: 'Users and messages reported from the app', render: () => renderReports() },
   config: { label: 'App config', icon: 'settings', sub: 'Force update and chat settings', render: () => renderConfig() },
 };
@@ -246,11 +250,11 @@ const state = { page: 'dashboard', stats: {}, charts: [], openConv: null };
 
 function renderNav() {
   const s = state.stats || {};
-  const badges = { messages: s.unread_official, reports: s.open_reports };
+  const badges = { messages: s.unread_official, reports: s.open_reports, feedback: s.new_feedback };
   $('nav').innerHTML = `<div class="nav-label">Overview</div>` +
     ['dashboard'].map(navItem).join('') +
     `<div class="nav-label">Engage</div>` + ['messages', 'notifications', 'promotions'].map(navItem).join('') +
-    `<div class="nav-label">Manage</div>` + ['reports', 'config'].map(navItem).join('');
+    `<div class="nav-label">Manage</div>` + ['feedback', 'reports', 'config'].map(navItem).join('');
   function navItem(k) {
     const p = PAGES[k];
     const n = badges[k];
@@ -300,7 +304,7 @@ async function pollBadges() {
 async function renderDashboard() {
   const v = $('view');
   v.innerHTML = `<div class="grid kpis">${Array.from({ length: 8 }, () => '<div class="card kpi"><div class="skeleton" style="width:100%;height:64px"></div></div>').join('')}</div>`;
-  const [s, series] = await Promise.all([rpc('admin_stats'), rpc('admin_timeseries', { days: 30 })]);
+  const [s, series, ai] = await Promise.all([rpc('admin_stats'), rpc('admin_timeseries', { days: 30 }), rpc('admin_ai_usage')]);
   state.stats = s;
   renderNav();
   const kpi = (label, value, ic, tone, sub = '') =>
@@ -308,6 +312,7 @@ async function renderDashboard() {
   const signups30 = series.reduce((n, d) => n + d.signups, 0);
   const attention = [];
   if (s.unread_official) attention.push(['messages', 'inbox', 'brand', `${num(s.unread_official)} unread ${s.unread_official === 1 ? 'reply' : 'replies'} to Spencheck`, 'Answer them in Messages']);
+  if (s.new_feedback) attention.push(['feedback', 'feedback', 'cyan', `${num(s.new_feedback)} new feedback`, 'Read and reply']);
   if (s.open_reports) attention.push(['reports', 'flag', 'red', `${num(s.open_reports)} open ${s.open_reports === 1 ? 'report' : 'reports'}`, 'Review and resolve']);
   if (!s.live_promotions) attention.push(['promotions', 'promo', 'amber', 'No live banner or popup', 'Create one to announce something']);
 
@@ -321,6 +326,8 @@ async function renderDashboard() {
       ${kpi('Open reports', s.open_reports, 'flag', s.open_reports ? 'red' : 'slate')}
       ${kpi('Live banners & popups', s.live_promotions, 'promo', 'amber')}
       ${kpi('Phones with push', s.devices, 'phone', 'slate', 'Registered for chat notifications')}
+      ${kpi('Built-in AI messages today', ai.today, 'spark', 'violet', `${num(ai.users_today)} users · ${num(ai.week)} this week`)}
+      ${kpi('New feedback', s.new_feedback, 'feedback', s.new_feedback ? 'cyan' : 'slate')}
     </div>
     <div class="grid two" style="margin-top:16px">
       <div class="card">
@@ -639,7 +646,8 @@ const SLOT_LABEL = { home_inline: 'Home card', app_open_popup: 'App-open popup',
 const LINKS = [
   ['', 'Nothing (just close)'], ['spencheck://social', 'Social tab'], ['spencheck://friends/find', 'Find friends'],
   ['spencheck://budget', 'Budget'], ['spencheck://reports', 'Reports'], ['spencheck://sms', 'SMS review'],
-  ['spencheck://year-review', 'Year review'], ['spencheck://update', 'Play Store (update)'], ['url', 'Web link…'],
+  ['spencheck://year-review', 'Year review'], ['spencheck://bills', 'Upcoming bills'], ['spencheck://reminders', 'Reminders'],
+  ['spencheck://notifications', 'Notification settings'], ['spencheck://update', 'Play Store (update)'], ['url', 'Web link…'],
 ];
 function promoStatus(p) {
   const now = Date.now();
@@ -843,12 +851,52 @@ async function renderReports(onlyOpen = true) {
   });
 }
 
+// ── Feedback ───────────────────────────────────────────────────────────────
+const KIND = { bug: ['Bug', 'tone-red'], idea: ['Idea', 'tone-amber'], question: ['Question', 'tone-brand'], other: ['Other', 'tone-slate'] };
+const FB_TONE = { new: 'tone-cyan', read: 'tone-slate', replied: 'tone-green', closed: 'tone-slate' };
+async function renderFeedback(onlyOpen = true) {
+  $('view').innerHTML = `<div class="toolbar"><div class="segmented" id="fbFilter"><button data-open="1" class="${onlyOpen ? 'on' : ''}">Open</button><button data-open="0" class="${onlyOpen ? '' : 'on'}">All</button></div></div>
+    <div class="grid" id="fbList"><div class="card card-pad"><div class="skeleton" style="height:16px;width:40%"></div></div></div>`;
+  $('fbFilter').querySelectorAll('button').forEach((b) => b.onclick = () => renderFeedback(b.dataset.open === '1'));
+  const rows = await rpc('admin_list_feedback', { only_open: onlyOpen });
+  // Opening the page marks new items as read.
+  const fresh = rows.filter((r) => r.status === 'new');
+  $('fbList').innerHTML = rows.length ? rows.map((r) => {
+    const [kind, tone] = KIND[r.kind] || KIND.other;
+    const who = r.display_name ? `${esc(r.display_name)} <span class="muted">@${esc(r.username)}</span>` : (r.email ? esc(r.email) : '<span class="muted">Anonymous</span>');
+    return `<div class="card"><div class="card-head" style="align-items:flex-start">
+        <div style="display:flex;gap:12px;align-items:center;min-width:0"><div class="avatar tone-${toneFor(r.username || r.email || r.id)}">${esc(initials(r.display_name || r.email || '?'))}</div>
+          <div style="min-width:0"><div style="font-weight:600">${who}</div><div class="small muted">${esc(fmtDate(r.created_at))}${r.app_version ? ` · v${esc(r.app_version)}` : ''}${r.device ? ` · ${esc(r.device)}` : ''}</div></div></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><span class="badge plain ${tone}">${kind}</span><span class="badge ${FB_TONE[r.status] || 'tone-slate'}">${esc(r.status)}</span></div></div>
+      <div class="card-pad" style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(r.message)}</div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;padding:0 20px 16px">
+        ${r.username ? `<button class="btn btn-primary btn-sm" data-chat="${esc(r.username)}" data-id="${esc(r.id)}">${icon('messages')}Reply in chat</button>` : ''}
+        ${r.email ? `<a class="btn btn-outline btn-sm" href="mailto:${encodeURIComponent(r.email)}?subject=${encodeURIComponent('Re: your Spencheck feedback')}" data-mail="${esc(r.id)}">${icon('mail')}Email</a>` : ''}
+        ${r.status !== 'closed' ? `<button class="btn btn-ghost btn-sm" data-close="${esc(r.id)}">Close</button>` : ''}
+      </div></div>`;
+  }).join('') : `<div class="card empty">${icon('check')}<div>${onlyOpen ? 'No open feedback.' : 'No feedback yet.'}</div></div>`;
+  $('fbList').querySelectorAll('[data-chat]').forEach((b) => b.onclick = async () => {
+    await rpc('admin_set_feedback_status', { feedback_id: b.dataset.id, new_status: 'replied' });
+    go('messages');
+    composeModal({ user: '@' + b.dataset.chat, body: '' });
+  });
+  $('fbList').querySelectorAll('[data-mail]').forEach((a) => a.addEventListener('click', () => rpc('admin_set_feedback_status', { feedback_id: a.dataset.mail, new_status: 'replied' })));
+  $('fbList').querySelectorAll('[data-close]').forEach((b) => b.onclick = async () => {
+    await rpc('admin_set_feedback_status', { feedback_id: b.dataset.close, new_status: 'closed' });
+    toast('Closed');
+    renderFeedback(onlyOpen);
+  });
+  for (const r of fresh) await sb.rpc('admin_set_feedback_status', { feedback_id: r.id, new_status: 'read' });
+  if (fresh.length) { state.stats.new_feedback = 0; renderNav(); }
+}
+
 // ── App config ─────────────────────────────────────────────────────────────
 async function renderConfig() {
   const rows = await rpc('admin_list_config');
   const get = (k) => rows.find((r) => r.key === k)?.value || {};
   const fu = get('force_update');
   const oc = get('official_chat');
+  const ai = get('ai');
   $('view').innerHTML = `<div class="grid two">
     <div class="card">
       <div class="card-head"><div style="display:flex;gap:12px;align-items:center"><div class="kpi-icon tone-red">${icon('update')}</div><div><h2>Force update</h2><p>Older versions get a full-screen “Update required”</p></div></div>
@@ -866,6 +914,14 @@ async function renderConfig() {
         <label class="check"><span class="switch"><input type="checkbox" id="cfReplies" ${oc.replies !== false ? 'checked' : ''}><span></span></span>Users can reply</label>
         <p class="hint" style="margin-top:10px">Off turns it into a read-only announcements channel. The database enforces it, so it applies instantly — even on old app versions.</p>
       </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div style="display:flex;gap:12px;align-items:center"><div class="kpi-icon tone-violet">${icon('spark')}</div><div><h2>Built-in AI</h2><p>For users without their own Gemini/ChatGPT key</p></div></div></div>
+      <div class="card-pad">
+        <div class="field"><label for="cfAi">Free AI messages per user per day</label><input class="input" type="number" min="0" max="200" id="cfAi" value="${esc(ai.daily_limit ?? 15)}">
+          <span class="hint">0 turns the built-in AI off (offline commands still work). Each message costs you a little on your Gemini key; tool steps inside one message count once.</span></div>
+        <div style="text-align:right"><button class="btn btn-primary" id="cfAiSave">Save</button></div>
+      </div>
     </div></div>`;
   $('cfSave').onclick = async () => {
     const v = $('cfMin').value.trim();
@@ -873,6 +929,11 @@ async function renderConfig() {
     await rpc('admin_set_config', { config_key: 'force_update', config_value: v ? { min_version: Number(v), message: $('cfMsg').value.trim() } : {} });
     toast(v ? `Force update on for versions below ${v}` : 'Force update off');
     renderConfig();
+  };
+  $('cfAiSave').onclick = async () => {
+    const n = Math.max(0, Math.min(200, Number($('cfAi').value || 0)));
+    await rpc('admin_set_config', { config_key: 'ai', config_value: { daily_limit: n } });
+    toast(n ? `Built-in AI: ${n} messages per user per day` : 'Built-in AI turned off');
   };
   $('cfReplies').onchange = async (e) => {
     await rpc('admin_set_config', { config_key: 'official_chat', config_value: { replies: e.target.checked } });

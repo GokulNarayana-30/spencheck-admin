@@ -65,7 +65,7 @@ svg.i { width: 18px; height: 18px; flex: none; stroke: currentColor; fill: none;
 .logo-lg { width: 56px; height: 56px; border-radius: 16px; font-size: 26px; }
 
 /* ── Buttons ─────────────────────────────────────────────────────────────── */
-.btn {
+.btn { text-decoration: none;
   display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 16px;
   border-radius: var(--radius-sm); border: 1px solid transparent; font-weight: 600; font-size: 13px;
   cursor: pointer; white-space: nowrap; transition: background .15s var(--ease), border-color .15s, opacity .15s;
