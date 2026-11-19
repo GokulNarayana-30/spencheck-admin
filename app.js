@@ -79,14 +79,81 @@ async function rpc(name, params) {
   return data;
 }
 
+// ── Username suggestions ───────────────────────────────────────────────────
+// Turns a plain input into a typeahead over admin_search_users. Selecting a
+// row fills "@username". `opts.needsDevice` greys out users who have no
+// phone registered (they can't receive a push).
+function attachUserSuggest(input, opts = {}) {
+  const wrap = document.createElement('div');
+  wrap.className = 'suggest-wrap';
+  input.parentNode.insertBefore(wrap, input);
+  wrap.appendChild(input);
+  input.setAttribute('autocomplete', 'off');
+  input.setAttribute('role', 'combobox');
+  input.setAttribute('aria-autocomplete', 'list');
+  const list = document.createElement('div');
+  list.className = 'suggest';
+  list.setAttribute('role', 'listbox');
+  list.hidden = true;
+  wrap.appendChild(list);
+  let rows = [];
+  let active = -1;
+  let timer = null;
+  let seq = 0;
+
+  function render(empty) {
+    list.hidden = false;
+    if (!rows.length) {
+      list.innerHTML = `<div class="suggest-empty">${empty ? 'No user matches that.' : 'Type a username or name…'}</div>`;
+      return;
+    }
+    list.innerHTML = rows.map((r, i) => {
+      const noDevice = opts.needsDevice && !r.devices;
+      return `<div class="suggest-item ${i === active ? 'on' : ''}" role="option" data-i="${i}" ${noDevice ? 'style="opacity:.55"' : ''}>
+        <div class="avatar tone-${toneFor(r.id)}">${esc(initials(r.display_name))}</div>
+        <div style="min-width:0"><div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.display_name)}</div><div class="small muted">@${esc(r.username)}</div></div>
+        <span class="meta">${r.devices ? `${icon('bell')}${num(r.devices)}` : (opts.needsDevice ? 'no phone registered' : '')}</span></div>`;
+    }).join('');
+  }
+  async function search() {
+    const mine = ++seq;
+    const { data, error } = await sb.rpc('admin_search_users', { q: input.value });
+    if (mine !== seq || error) return;
+    rows = data || [];
+    active = rows.length ? 0 : -1;
+    if (document.activeElement === input) render(input.value.replace(/^@/, '').trim() !== '');
+  }
+  function pick(i) {
+    const r = rows[i];
+    if (!r) return;
+    input.value = '@' + r.username;
+    list.hidden = true;
+    input.dispatchEvent(new Event('change'));
+  }
+  input.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(search, 180); });
+  input.addEventListener('focus', () => { if (!rows.length) search(); else render(false); });
+  input.addEventListener('blur', () => setTimeout(() => { list.hidden = true; }, 150));
+  input.addEventListener('keydown', (e) => {
+    if (list.hidden || !rows.length) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); active = (active + 1) % rows.length; render(true); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); active = (active - 1 + rows.length) % rows.length; render(true); }
+    else if (e.key === 'Enter' && active >= 0) { e.preventDefault(); pick(active); }
+    else if (e.key === 'Escape') { e.stopPropagation(); list.hidden = true; }
+  });
+  list.addEventListener('mousedown', (e) => {
+    const item = e.target.closest('.suggest-item');
+    if (item) { e.preventDefault(); pick(Number(item.dataset.i)); }
+  });
+}
+
 // ── Modal ──────────────────────────────────────────────────────────────────
-function openModal({ title, body, foot = '', wide = false }) {
+function openModal({ title, body, foot = '', wide = false, overflow = false }) {
   closeModal();
   const back = document.createElement('div');
   back.className = 'modal-back';
   back.innerHTML = `<div class="modal ${wide ? 'wide' : ''}" role="dialog" aria-modal="true" aria-label="${esc(title)}">
     <div class="modal-head"><h2>${esc(title)}</h2><button class="icon-btn" data-close aria-label="Close">${icon('x')}</button></div>
-    <div class="modal-body">${body}</div>
+    <div class="modal-body" ${overflow ? 'style="overflow:visible"' : ''}>${body}</div>
     ${foot ? `<div class="modal-foot">${foot}</div>` : ''}</div>`;
   back.addEventListener('click', (e) => { if (e.target === back || e.target.closest('[data-close]')) closeModal(); });
   $('modalRoot').appendChild(back);
@@ -435,6 +502,7 @@ async function loadConvo(conv, quiet = false) {
 function composeModal(draft = {}) {
   const m = openModal({
     title: 'New message from Spencheck',
+    overflow: true,
     body: `
       <div class="field"><label>Send to</label>
         <div class="segmented" id="toSeg"><button type="button" class="on" data-to="one">One user</button><button type="button" data-to="all">Everyone</button></div></div>
@@ -452,6 +520,7 @@ function composeModal(draft = {}) {
       ? `Goes to all ${num(state.stats.profiles)} users, each with a push notification.`
       : 'Arrives in their Chats tab from “Spencheck” with a verified tick, plus a push notification.';
   });
+  attachUserSuggest(m.querySelector('#cmUser'));
   m.querySelector('#cmUser').value = draft.user || '';
   m.querySelector('#cmBody').value = draft.body || '';
   if (draft.all) m.querySelector('#toSeg [data-to=all]').click();
@@ -503,6 +572,7 @@ async function renderNotifications() {
       </div>
     </div></div>
     <div class="card" style="margin-top:16px"><div class="card-head"><div><h2>History</h2><p>Last 100 sent from this panel</p></div></div><div class="table-wrap" id="nfHistory"></div></div>`;
+  attachUserSuggest($('nfUser'), { needsDevice: true });
   let audience = 'all';
   const pv = () => {
     $('nfPvTitle').textContent = $('nfTitle').value || 'Title';
