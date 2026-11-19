@@ -9,7 +9,12 @@
 
 const SUPABASE_URL = 'https://jmnuzfrtpinwaeylxrbp.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_iRO4WGQea5m0Hh2qE4bcOg_zr-eeWct'; // public by design
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// The default cross-tab lock (navigator.locks) can stall getSession() forever
+// in some browsers, leaving a blank page. This console is single-tab, so
+// run auth operations directly instead.
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { lock: async (_name, _timeout, fn) => fn() },
+});
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 const $ = (id) => document.getElementById(id);
@@ -136,7 +141,12 @@ $('signOutBtn').onclick = signOut;
 $('signOutBtnNav').onclick = signOut;
 
 async function boot() {
-  const { data } = await sb.auth.getSession();
+  // Never leave the page blank: if the stored session can't be read in 4s,
+  // show the sign-in form.
+  const { data } = await Promise.race([
+    sb.auth.getSession(),
+    new Promise((resolve) => setTimeout(() => resolve({ data: { session: null } }), 4000)),
+  ]);
   if (!data.session) { $('authScreen').hidden = false; $('app').hidden = true; return; }
   try {
     state.stats = await rpc('admin_stats');
