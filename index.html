@@ -1,434 +1,93 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Spencheck Admin</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --bg: #0B0D12; --surface: #151821; --raised: #1C2030; --line: rgba(255,255,255,.08);
-    --text: #F3F5F9; --muted: #98A2B3; --accent: #8B9BFF; --on-accent: #0B0D12;
-    --success: #4ADE9B; --danger: #FF7A7A; --warning: #FBBF4A;
-  }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 Inter, system-ui, sans-serif; }
-  h1, h2 { font-family: Sora, Inter, sans-serif; margin: 0; }
-  h1 { font-size: 24px; } h2 { font-size: 16px; }
-  a { color: var(--accent); }
-  button, input, select, textarea { font: inherit; color: inherit; }
-  .btn { height: 40px; padding: 0 16px; border-radius: 10px; border: 1px solid var(--line); background: transparent; cursor: pointer; font-weight: 600; }
-  .btn.primary { background: var(--accent); color: var(--on-accent); border: 0; }
-  .btn.danger { color: var(--danger); border-color: rgba(255,122,122,.4); }
-  .btn:disabled { opacity: .5; cursor: default; }
-  .in { width: 100%; height: 42px; padding: 0 12px; border-radius: 10px; background: #0F1117; border: 1px solid var(--line); outline: none; }
-  textarea.in { height: auto; min-height: 70px; padding: 10px 12px; resize: vertical; }
-  .in:focus { border-color: var(--accent); }
-  label.fl { display: block; font-size: 12px; font-weight: 600; color: #C9CFDA; margin: 14px 0 6px; }
-  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; }
-  .muted { color: var(--muted); }
-  .pill { display: inline-block; font-size: 12px; font-weight: 600; border-radius: 999px; padding: 3px 10px; background: var(--raised); color: #C9CFDA; }
-  .pill.live { background: rgba(74,222,155,.13); color: var(--success); }
-  .pill.scheduled { background: rgba(139,155,255,.15); color: var(--accent); }
-  .pill.open { background: rgba(251,191,74,.14); color: var(--warning); }
-  .layout { display: flex; flex-wrap: wrap; min-height: 100vh; }
-  aside { flex: 0 0 230px; padding: 24px 14px; border-right: 1px solid var(--line); }
-  aside .brand { display: flex; gap: 10px; align-items: center; padding: 0 8px 24px; }
-  aside .logo { width: 32px; height: 32px; border-radius: 10px; background: var(--accent); }
-  nav a { display: block; padding: 9px 12px; border-radius: 10px; color: #B5BDCB; text-decoration: none; font-weight: 500; cursor: pointer; }
-  nav a.on { background: var(--raised); color: var(--text); }
-  main { flex: 999 1 560px; min-width: 0; padding: 28px 32px; }
-  .row { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; }
-  .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-  table { width: 100%; border-collapse: collapse; }
-  th { text-align: left; font-size: 12px; color: var(--muted); font-weight: 600; padding: 12px 14px; border-bottom: 1px solid var(--line); }
-  td { padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,.05); vertical-align: top; }
-  tr.sel td { background: #1A1F35; }
-  tr.click { cursor: pointer; }
-  .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
-  .stat { padding: 16px; }
-  .stat b { display: block; font: 700 24px Sora, sans-serif; margin-top: 4px; }
-  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--raised); border: 1px solid var(--line); padding: 10px 16px; border-radius: 12px; display: none; }
-  .login { max-width: 360px; margin: 12vh auto; padding: 28px; }
-  .preview { padding: 12px; border-radius: 16px; background: #1A1F35; border: 1px solid rgba(139,155,255,.22); display: flex; gap: 10px; align-items: center; }
-  .preview img { width: 48px; height: 48px; border-radius: 10px; object-fit: cover; }
-  .hidden { display: none !important; }
-  @media (max-width: 720px) { aside { flex-basis: 100%; border-right: 0; border-bottom: 1px solid var(--line); } main { padding: 20px 16px; } .grid2 { grid-template-columns: 1fr; } }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src https://jmnuzfrtpinwaeylxrbp.supabase.co wss://jmnuzfrtpinwaeylxrbp.supabase.co; object-src 'none'; base-uri 'none'; form-action 'self'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Spencheck Admin</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%238B9BFF'/><stop offset='1' stop-color='%232C5CE0'/></linearGradient></defs><rect width='64' height='64' rx='16' fill='url(%23g)'/><text x='32' y='44' font-family='Arial' font-weight='800' font-size='34' text-anchor='middle' fill='white'>S</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="theme.js"></script>
 </head>
 <body>
 
-<div id="login" class="card login hidden">
-  <h1>Spencheck Admin</h1>
-  <p class="muted">Sign in with your admin account.</p>
-  <label class="fl" for="email">Email</label><input id="email" class="in" type="email" autocomplete="username">
-  <label class="fl" for="password">Password</label><input id="password" class="in" type="password" autocomplete="current-password">
-  <p id="loginError" style="color: var(--danger)"></p>
-  <button id="loginBtn" class="btn primary" style="width:100%">Sign in</button>
-</div>
-
-<div id="app" class="layout hidden">
-  <aside>
-    <div class="brand"><div class="logo"></div><div><b style="font-family:Sora">Spencheck</b><div class="muted" style="font-size:11px">Admin console</div></div></div>
-    <nav>
-      <a data-page="overview" class="on">Overview</a>
-      <a data-page="messages">Messages <span id="msgBadge" class="pill open hidden" style="margin-left:6px;padding:1px 8px"></span></a>
-      <a data-page="promotions">Banners &amp; popups</a>
-      <a data-page="reports">Reports</a>
-      <a data-page="config">App config</a>
-    </nav>
-    <div style="padding: 24px 8px 0"><button id="signOut" class="btn" style="width:100%">Sign out</button></div>
-  </aside>
-  <main>
-    <!-- Overview -->
-    <section data-page="overview">
-      <h1>Overview</h1>
-      <p class="muted">Social features at a glance.</p>
-      <div id="stats" class="stats" style="margin-top: 20px"></div>
-    </section>
-
-    <!-- Official messages -->
-    <section data-page="messages" class="hidden">
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
-        <div><h1>Messages</h1><p class="muted" style="margin:6px 0 0">Chat with users as <b>Spencheck</b> (verified). Shows up in their Chats tab with a push notification.</p></div>
-        <label style="display:flex;gap:8px;align-items:center"><input id="repliesOn" type="checkbox"> Users can reply</label>
+  <!-- Signed out -->
+  <div class="auth-screen" id="authScreen" hidden>
+    <div class="auth-card">
+      <div class="auth-brand">
+        <div class="logo logo-lg">S</div>
+        <h1>Spencheck Admin</h1>
+        <p>Sign in with your admin account</p>
       </div>
-      <div class="card" style="padding:20px;margin-top:20px">
-        <h2>New message</h2>
-        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:12px">
-          <label style="display:flex;gap:6px;align-items:center"><input type="radio" name="to" value="one" checked> One user</label>
-          <label style="display:flex;gap:6px;align-items:center"><input type="radio" name="to" value="all"> Everyone</label>
+      <form id="signInForm" autocomplete="on">
+        <div class="field">
+          <label for="signInEmail">Email</label>
+          <input class="input" type="email" id="signInEmail" autocomplete="username" required>
         </div>
-        <input id="m_user" class="in" style="margin-top:10px" placeholder="@username">
-        <textarea id="m_body" class="in" style="margin-top:10px" maxlength="4000" placeholder="Write a message…"></textarea>
-        <div style="text-align:right;margin-top:12px"><button id="m_send" class="btn primary">Send</button></div>
-      </div>
-      <div class="row" style="margin-top:20px">
-        <div class="card" style="flex:1 1 300px;min-width:0;overflow:hidden">
-          <div style="padding:14px 16px;border-bottom:1px solid var(--line)"><b>Conversations</b></div>
-          <div id="threadList" style="max-height:560px;overflow-y:auto"></div>
-        </div>
-        <div class="card" style="flex:999 1 420px;min-width:0;display:flex;flex-direction:column;min-height:420px">
-          <div id="threadHead" style="padding:14px 16px;border-bottom:1px solid var(--line)" class="muted">Pick a conversation</div>
-          <div id="threadMsgs" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column-reverse;gap:8px;max-height:480px"></div>
-          <div id="replyBox" class="hidden" style="display:flex;gap:8px;padding:12px;border-top:1px solid var(--line)">
-            <input id="r_body" class="in" maxlength="4000" placeholder="Reply as Spencheck…">
-            <button id="r_send" class="btn primary">Send</button>
+        <div class="field">
+          <label for="signInPassword">Password</label>
+          <div class="password-wrap">
+            <input class="input" type="password" id="signInPassword" autocomplete="current-password" required>
+            <button type="button" id="togglePassword">Show</button>
           </div>
         </div>
-      </div>
-    </section>
+        <p class="auth-error" id="authError"></p>
+        <button class="btn btn-primary btn-block" type="submit" id="signInBtn">Sign in</button>
+      </form>
+      <p class="auth-note">Admins only. Every action is checked on the server.</p>
+    </div>
+  </div>
 
-    <!-- Promotions -->
-    <section data-page="promotions" class="hidden">
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
-        <div><h1>Banners &amp; popups</h1><p class="muted" style="margin:6px 0 0">Changes reach the app on next open — no update needed.</p></div>
-        <button id="newPromo" class="btn primary">+ New</button>
-      </div>
-      <div class="row" style="margin-top:20px">
-        <div class="card" style="flex:999 1 520px;min-width:0;overflow-x:auto">
-          <table><thead><tr><th>Title</th><th>Where</th><th>Schedule</th><th>Status</th></tr></thead><tbody id="promoRows"></tbody></table>
-        </div>
-        <div class="card" style="flex:1 1 340px;min-width:0;padding:20px">
-          <h2 id="editTitle">New promotion</h2>
-          <label class="fl" for="p_slot">Where it shows</label>
-          <select id="p_slot" class="in">
-            <option value="home_inline">Home card</option>
-            <option value="app_open_popup">Popup when the app opens</option>
-            <option value="system_popup">System popup (force update / maintenance)</option>
-          </select>
-          <label class="fl" for="p_title">Title</label><input id="p_title" class="in" maxlength="80">
-          <label class="fl" for="p_subtitle">Message</label><textarea id="p_subtitle" class="in" maxlength="300"></textarea>
-          <div class="grid2">
-            <div><label class="fl" for="p_cta">Button label</label><input id="p_cta" class="in" maxlength="30"></div>
-            <div><label class="fl" for="p_link">Opens</label>
-              <select id="p_link" class="in">
-                <option value="">Nothing (dismiss)</option>
-                <option value="spencheck://social">Social tab</option>
-                <option value="spencheck://friends/find">Find friends</option>
-                <option value="spencheck://budget">Budget</option>
-                <option value="spencheck://reports">Reports</option>
-                <option value="spencheck://sms">SMS review</option>
-                <option value="spencheck://year-review">Year review</option>
-                <option value="spencheck://update">Play Store (update)</option>
-                <option value="url">Web link…</option>
-              </select>
-            </div>
-          </div>
-          <input id="p_url" class="in hidden" style="margin-top:8px" placeholder="https://…">
-          <label class="fl" for="p_image">Image (optional)</label>
-          <input id="p_image" type="file" accept="image/*" class="in" style="padding-top:8px">
-          <div class="grid2">
-            <div><label class="fl" for="p_start">Starts</label><input id="p_start" type="datetime-local" class="in"></div>
-            <div><label class="fl" for="p_end">Ends (optional)</label><input id="p_end" type="datetime-local" class="in"></div>
-            <div><label class="fl" for="p_freq">How often</label>
-              <select id="p_freq" class="in"><option value="once_per_user">Once per user</option><option value="once_per_day">Once a day</option><option value="every_open">Every open</option></select></div>
-            <div><label class="fl" for="p_minv">Only below app version</label><input id="p_minv" type="number" class="in" placeholder="e.g. 16 (blank = all)"></div>
-          </div>
-          <label style="display:flex;gap:8px;align-items:center;margin-top:14px"><input id="p_active" type="checkbox" checked> Active</label>
-          <label style="display:flex;gap:8px;align-items:center;margin-top:8px"><input id="p_blocking" type="checkbox"> Blocking (can't be dismissed — force update)</label>
-          <label style="display:flex;gap:8px;align-items:center;margin-top:8px"><input id="p_sponsored" type="checkbox"> Sponsored (shows a "Sponsored" label)</label>
-          <div class="fl">Preview</div>
-          <div class="preview"><img id="pv_img" class="hidden" alt=""><div style="flex:1;min-width:0"><b id="pv_title">Title</b><div id="pv_sub" class="muted" style="font-size:12px"></div></div><span id="pv_cta" style="color:var(--accent);font-weight:600;font-size:13px"></span></div>
-          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap">
-            <button id="deletePromo" class="btn danger hidden">Delete</button>
-            <button id="savePromo" class="btn primary">Save &amp; publish</button>
-          </div>
+  <!-- Signed in -->
+  <div class="layout" id="app" hidden>
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="logo">S</div>
+        <div>
+          <div class="brand-name">Spencheck</div>
+          <div class="brand-sub">Admin console</div>
         </div>
       </div>
-    </section>
-
-    <!-- Reports -->
-    <section data-page="reports" class="hidden">
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
-        <div><h1>Reports</h1><p class="muted" style="margin:6px 0 0">Users and messages reported from the app. Review every open report.</p></div>
-        <label style="display:flex;gap:8px;align-items:center"><input id="onlyOpen" type="checkbox" checked> Open only</label>
+      <div class="me-card">
+        <div class="me-avatar" id="meAvatar">A</div>
+        <div style="min-width:0">
+          <div class="me-name" id="meName">—</div>
+          <div class="me-role">Administrator</div>
+        </div>
       </div>
-      <div class="card" style="margin-top:20px;overflow-x:auto">
-        <table><thead><tr><th>When</th><th>Reported</th><th>Reason</th><th>Details / message</th><th>Status</th><th></th></tr></thead><tbody id="reportRows"></tbody></table>
-      </div>
-    </section>
+      <nav class="nav" id="nav"></nav>
+      <button class="btn btn-outline btn-block show-sm" id="signOutBtnNav" style="margin-top:12px">Sign out</button>
+      <div class="sidebar-foot"><span class="dot"></span>Supabase · live data</div>
+    </aside>
+    <div class="scrim" id="scrim"></div>
 
-    <!-- Config -->
-    <section data-page="config" class="hidden">
-      <h1>App config</h1>
-      <p class="muted">Values the app reads on start.</p>
-      <div class="card" style="padding:20px;margin-top:20px;max-width:560px">
-        <h2>Force update</h2>
-        <p class="muted" style="margin:6px 0 0">Users on a lower version code than this see a blocking "Update required" screen.</p>
-        <label class="fl" for="c_minv">Minimum version code</label>
-        <input id="c_minv" type="number" class="in" placeholder="e.g. 15 (blank = off)">
-        <label class="fl" for="c_msg">Message</label>
-        <input id="c_msg" class="in" placeholder="This version is no longer supported. Please update.">
-        <div style="text-align:right;margin-top:16px"><button id="saveConfig" class="btn primary">Save</button></div>
-      </div>
-    </section>
-  </main>
-</div>
+    <div class="main">
+      <header class="topbar">
+        <button class="icon-btn menu-btn" id="menuBtn" aria-label="Open menu"></button>
+        <div class="topbar-title">
+          <h1 id="pageTitle">Dashboard</h1>
+          <p id="pageSubtitle"></p>
+        </div>
+        <div class="topbar-actions">
+          <button class="icon-btn" id="refreshBtn" title="Refresh" aria-label="Refresh"></button>
+          <button class="icon-btn" id="themeBtn" title="Light / dark" aria-label="Switch theme"></button>
+          <button class="btn btn-outline btn-sm hide-sm" id="signOutBtn">Sign out</button>
+        </div>
+      </header>
+      <main class="content" id="view"></main>
+    </div>
+  </div>
 
-<div id="toast" class="toast"></div>
+  <div id="modalRoot"></div>
+  <div class="toasts" id="toasts" aria-live="polite"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script>
-const SUPABASE_URL = 'https://jmnuzfrtpinwaeylxrbp.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_iRO4WGQea5m0Hh2qE4bcOg_zr-eeWct'; // public by design
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-const $ = (id) => document.getElementById(id);
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const toast = (msg) => { const t = $('toast'); t.textContent = msg; t.style.display = 'block'; clearTimeout(t._h); t._h = setTimeout(() => t.style.display = 'none', 3000); };
-const fmt = (d) => d ? new Date(d).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
-const toLocalInput = (d) => { if (!d) return ''; const x = new Date(d); x.setMinutes(x.getMinutes() - x.getTimezoneOffset()); return x.toISOString().slice(0, 16); };
-
-async function rpc(name, params) {
-  const { data, error } = await sb.rpc(name, params);
-  if (error) { toast(error.message); throw error; }
-  return data;
-}
-
-// ---- auth ----
-async function boot() {
-  const { data } = await sb.auth.getSession();
-  if (!data.session) { $('login').classList.remove('hidden'); return; }
-  try { await rpc('admin_stats'); } catch (e) {
-    await sb.auth.signOut(); $('login').classList.remove('hidden');
-    $('loginError').textContent = 'This account is not an admin.'; return;
-  }
-  $('login').classList.add('hidden'); $('app').classList.remove('hidden');
-  show('overview');
-}
-$('loginBtn').onclick = async () => {
-  $('loginError').textContent = '';
-  const { error } = await sb.auth.signInWithPassword({ email: $('email').value.trim(), password: $('password').value });
-  if (error) { $('loginError').textContent = error.message; return; }
-  boot();
-};
-$('signOut').onclick = async () => { await sb.auth.signOut(); location.reload(); };
-
-// ---- nav ----
-document.querySelectorAll('nav a').forEach((a) => a.onclick = () => show(a.dataset.page));
-function show(page) {
-  document.querySelectorAll('nav a').forEach((a) => a.classList.toggle('on', a.dataset.page === page));
-  document.querySelectorAll('main section').forEach((s) => s.classList.toggle('hidden', s.dataset.page !== page));
-  ({ overview: loadStats, messages: loadMessages, promotions: loadPromos, reports: loadReports, config: loadConfig })[page]();
-}
-
-// ---- overview ----
-async function loadStats() {
-  const s = await rpc('admin_stats');
-  const items = [['Users with a username', s.profiles], ['New this week', s.profiles_7d], ['Friendships', s.friendships],
-    ['Messages this week', s.messages_7d], ['Unread replies to Spencheck', s.unread_official ?? 0], ['Open reports', s.open_reports], ['Live banners/popups', s.live_promotions], ['Devices for push', s.devices]];
-  setBadge(s.unread_official ?? 0);
-  $('stats').innerHTML = items.map(([k, v]) => `<div class="card stat"><span class="muted">${k}</span><b>${Number(v).toLocaleString('en-IN')}</b></div>`).join('');
-}
-
-// ---- official messages ----
-let openConv = null;
-function setBadge(n) { const b = $('msgBadge'); b.textContent = n; b.classList.toggle('hidden', !n); }
-async function loadMessages() {
-  const cfg = await rpc('admin_list_config');
-  $('repliesOn').checked = (cfg.find((r) => r.key === 'official_chat')?.value?.replies) !== false;
-  await loadThreads();
-}
-async function loadThreads() {
-  const rows = await rpc('admin_official_threads');
-  setBadge(rows.reduce((n, r) => n + (r.unread || 0), 0));
-  $('threadList').innerHTML = rows.map((r) => `<div class="click" data-conv="${r.conversation_id}" style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer;${openConv === r.conversation_id ? 'background:#1A1F35' : ''}">
-      <div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(r.display_name)}</b><span class="muted" style="font-size:12px">${fmt(r.last_at)}</span></div>
-      <div style="display:flex;justify-content:space-between;gap:8px"><span class="muted" style="font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.last_from_user ? '' : 'You: '}${esc(r.last_kind === 'image' ? '📷 Photo' : (r.last_body || ''))}</span>${r.unread ? `<span class="pill open">${r.unread}</span>` : ''}</div>
-      <div class="muted" style="font-size:11px">@${esc(r.username)}</div></div>`).join('')
-    || '<div class="muted" style="padding:16px">No conversations yet — send a message above.</div>';
-  document.querySelectorAll('#threadList [data-conv]').forEach((el) => el.onclick = () => openThread(el.dataset.conv, rows.find((r) => r.conversation_id === el.dataset.conv)));
-}
-async function openThread(conv, info) {
-  openConv = conv;
-  if (info) $('threadHead').innerHTML = `<b>${esc(info.display_name)}</b> <span class="muted">@${esc(info.username)}</span>`;
-  $('threadHead').classList.remove('muted');
-  $('replyBox').classList.remove('hidden');
-  const msgs = await rpc('admin_official_messages', { conv });
-  $('threadMsgs').innerHTML = msgs.map((m) => `<div style="align-self:${m.from_user ? 'flex-start' : 'flex-end'};max-width:75%;padding:9px 12px;border-radius:14px;background:${m.from_user ? 'var(--raised)' : 'var(--accent)'};color:${m.from_user ? 'var(--text)' : 'var(--on-accent)'}">
-      ${m.kind === 'text' || m.kind === 'system' ? esc(m.body) : `<i>[${esc(m.kind)}]</i> ${esc(m.body || '')}`}
-      <div style="font-size:11px;opacity:.7;margin-top:2px">${fmt(m.created_at)}</div></div>`).join('');
-  loadThreads();
-}
-document.querySelectorAll('input[name=to]').forEach((r) => r.onchange = () => $('m_user').classList.toggle('hidden', r.value === 'all' && r.checked));
-$('m_send').onclick = async () => {
-  const all = document.querySelector('input[name=to]:checked').value === 'all';
-  const body = $('m_body').value.trim();
-  const user = $('m_user').value.trim();
-  if (!body) { toast('Write a message'); return; }
-  if (!all && !user) { toast('Enter a @username'); return; }
-  if (all && !confirm('Send this to every user? Each gets a push notification.')) return;
-  $('m_send').disabled = true;
-  try {
-    const n = await rpc('admin_send_official', { target_username: all ? null : user, body });
-    toast(`Sent to ${n} ${n === 1 ? 'user' : 'users'}`); $('m_body').value = ''; loadThreads();
-  } finally { $('m_send').disabled = false; }
-};
-async function reply() {
-  const body = $('r_body').value.trim();
-  if (!body || !openConv) return;
-  $('r_send').disabled = true;
-  try { await rpc('admin_official_reply', { conv: openConv, body }); $('r_body').value = ''; openThread(openConv); }
-  finally { $('r_send').disabled = false; }
-}
-$('r_send').onclick = reply;
-$('r_body').onkeydown = (e) => { if (e.key === 'Enter') reply(); };
-$('repliesOn').onchange = async () => {
-  await rpc('admin_set_config', { config_key: 'official_chat', config_value: { replies: $('repliesOn').checked } });
-  toast($('repliesOn').checked ? 'Users can reply' : 'Replies turned off');
-};
-// Refresh the unread badge / open thread every 30s.
-setInterval(() => { if (!$('app').classList.contains('hidden')) { if (openConv && !document.querySelector('section[data-page=messages]').classList.contains('hidden')) openThread(openConv); else rpc('admin_stats').then((s) => setBadge(s.unread_official ?? 0)).catch(() => {}); } }, 30000);
-
-// ---- promotions ----
-let promos = [], editing = null;
-const slotName = { home_inline: 'Home card', app_open_popup: 'App-open popup', system_popup: 'System popup', home_carousel: 'Home carousel', post_save: 'After save', more_offers: 'More tab' };
-function status(p) {
-  const now = Date.now();
-  if (!p.is_active) return ['Paused', ''];
-  if (Date.parse(p.starts_at) > now) return ['Scheduled', 'scheduled'];
-  if (p.ends_at && Date.parse(p.ends_at) <= now) return ['Ended', ''];
-  return ['Live', 'live'];
-}
-async function loadPromos() {
-  promos = await rpc('admin_list_promotions');
-  $('promoRows').innerHTML = promos.map((p) => {
-    const [label, cls] = status(p);
-    return `<tr class="click ${editing && editing.id === p.id ? 'sel' : ''}" data-id="${p.id}"><td><b>${esc(p.title)}</b><div class="muted" style="font-size:12px">${esc(p.subtitle || '')}</div></td><td>${slotName[p.slot] || p.slot}</td><td>${fmt(p.starts_at)} → ${p.ends_at ? fmt(p.ends_at) : 'no end'}</td><td><span class="pill ${cls}">${label}</span></td></tr>`;
-  }).join('') || '<tr><td colspan="4" class="muted">Nothing yet — create a banner or popup.</td></tr>';
-  document.querySelectorAll('#promoRows tr[data-id]').forEach((tr) => tr.onclick = () => edit(promos.find((p) => p.id === tr.dataset.id)));
-}
-function edit(p) {
-  editing = p || null;
-  $('editTitle').textContent = p ? 'Edit promotion' : 'New promotion';
-  $('deletePromo').classList.toggle('hidden', !p);
-  $('p_slot').value = p?.slot || 'home_inline';
-  $('p_title').value = p?.title || ''; $('p_subtitle').value = p?.subtitle || ''; $('p_cta').value = p?.cta_label || '';
-  const link = p?.deep_link || '';
-  const known = [...$('p_link').options].some((o) => o.value === link);
-  $('p_link').value = known ? link : 'url'; $('p_url').value = known ? '' : link;
-  $('p_url').classList.toggle('hidden', known);
-  $('p_start').value = toLocalInput(p?.starts_at || new Date()); $('p_end').value = toLocalInput(p?.ends_at);
-  $('p_freq').value = p?.frequency || 'once_per_user';
-  $('p_minv').value = p?.audience?.below_version ?? '';
-  $('p_active').checked = p ? p.is_active : true; $('p_blocking').checked = !!p?.blocking; $('p_sponsored').checked = !!p?.sponsored;
-  $('p_image').value = ''; $('p_image').dataset.url = p?.image_url || '';
-  preview(); loadPromos();
-}
-$('newPromo').onclick = () => edit(null);
-$('p_link').onchange = () => $('p_url').classList.toggle('hidden', $('p_link').value !== 'url');
-['p_title', 'p_subtitle', 'p_cta'].forEach((id) => $(id).oninput = preview);
-$('p_image').onchange = preview;
-function preview() {
-  $('pv_title').textContent = $('p_title').value || 'Title';
-  $('pv_sub').textContent = $('p_subtitle').value;
-  $('pv_cta').textContent = $('p_cta').value;
-  const f = $('p_image').files[0]; const url = f ? URL.createObjectURL(f) : $('p_image').dataset.url;
-  $('pv_img').classList.toggle('hidden', !url); if (url) $('pv_img').src = url;
-}
-$('savePromo').onclick = async () => {
-  if (!$('p_title').value.trim()) { toast('Add a title'); return; }
-  $('savePromo').disabled = true;
-  try {
-    let image = $('p_image').dataset.url || null;
-    const f = $('p_image').files[0];
-    if (f) {
-      const path = `${Date.now()}-${f.name.replace(/[^a-z0-9.]/gi, '_')}`;
-      const { error } = await sb.storage.from('promotions').upload(path, f, { contentType: f.type });
-      if (error) { toast(error.message); return; }
-      image = sb.storage.from('promotions').getPublicUrl(path).data.publicUrl;
-    }
-    const link = $('p_link').value === 'url' ? $('p_url').value.trim() : $('p_link').value;
-    const minv = $('p_minv').value.trim();
-    const saved = await rpc('admin_save_promotion', { p: {
-      id: editing?.id ?? null, slot: $('p_slot').value, title: $('p_title').value.trim(), subtitle: $('p_subtitle').value.trim(),
-      cta_label: $('p_cta').value.trim(), deep_link: link, image_url: image,
-      starts_at: $('p_start').value ? new Date($('p_start').value).toISOString() : null,
-      ends_at: $('p_end').value ? new Date($('p_end').value).toISOString() : null,
-      frequency: $('p_freq').value, audience: minv ? { below_version: Number(minv) } : {},
-      is_active: $('p_active').checked, blocking: $('p_blocking').checked, sponsored: $('p_sponsored').checked,
-    } });
-    toast('Saved'); edit(saved);
-  } finally { $('savePromo').disabled = false; }
-};
-$('deletePromo').onclick = async () => {
-  if (!editing || !confirm(`Delete "${editing.title}"?`)) return;
-  await rpc('admin_delete_promotion', { promotion_id: editing.id }); toast('Deleted'); edit(null);
-};
-
-// ---- reports ----
-async function loadReports() {
-  const rows = await rpc('admin_list_reports', { only_open: $('onlyOpen').checked });
-  $('reportRows').innerHTML = rows.map((r) => `<tr><td>${fmt(r.created_at)}<div class="muted" style="font-size:12px">by @${esc(r.reporter_username || 'deleted')}</div></td>
-    <td><b>${esc(r.reported_display_name || 'Deleted account')}</b><div class="muted" style="font-size:12px">${r.reported_username ? '@' + esc(r.reported_username) : ''}</div></td>
-    <td>${esc(r.reason)}</td><td>${esc(r.details || '')}${r.message_body ? `<div class="muted" style="font-size:12px;margin-top:4px">Message: “${esc(r.message_body)}”</div>` : ''}</td>
-    <td><span class="pill ${r.status === 'open' ? 'open' : ''}">${r.status}</span></td>
-    <td style="white-space:nowrap">${r.status === 'open' ? `<button class="btn" data-a="dismissed" data-id="${r.id}">Dismiss</button> <button class="btn" data-a="reviewed" data-id="${r.id}">Reviewed</button> ${r.reported_username ? `<button class="btn danger" data-remove="${esc(r.reported_id)}" data-name="${esc(r.reported_username)}">Remove user</button>` : ''}` : ''}</td></tr>`).join('')
-    || '<tr><td colspan="6" class="muted">No reports.</td></tr>';
-  document.querySelectorAll('#reportRows button[data-a]').forEach((b) => b.onclick = async () => {
-    await rpc('admin_set_report_status', { report_id: b.dataset.id, new_status: b.dataset.a }); loadReports();
-  });
-  document.querySelectorAll('#reportRows button[data-remove]').forEach((b) => b.onclick = async () => {
-    if (!confirm(`Remove @${b.dataset.name}'s profile, friends and messages? Their own money data on their phone is not touched.`)) return;
-    await rpc('admin_remove_profile', { target_id: b.dataset.remove }); toast('User removed'); loadReports();
-  });
-}
-$('onlyOpen').onchange = loadReports;
-
-// ---- config ----
-async function loadConfig() {
-  const rows = await rpc('admin_list_config');
-  const fu = rows.find((r) => r.key === 'force_update')?.value || {};
-  $('c_minv').value = fu.min_version ?? ''; $('c_msg').value = fu.message ?? '';
-}
-$('saveConfig').onclick = async () => {
-  const v = $('c_minv').value.trim();
-  await rpc('admin_set_config', { config_key: 'force_update', config_value: v ? { min_version: Number(v), message: $('c_msg').value.trim() } : {} });
-  toast('Saved');
-};
-
-boot();
-</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+  <script src="app.js"></script>
 </body>
 </html>
