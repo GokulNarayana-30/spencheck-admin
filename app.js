@@ -60,6 +60,7 @@ const ICONS = {
   back: '<path d="m15 18-6-6 6-6"/>',
   verified: '<path d="M12 2l2.4 2.1 3.2-.4.9 3.1 2.8 1.6-1.2 3 1.2 3-2.8 1.6-.9 3.1-3.2-.4L12 22l-2.4-2.1-3.2.4-.9-3.1-2.8-1.6 1.2-3-1.2-3 2.8-1.6.9-3.1 3.2.4z"/><path d="m8.5 12 2.5 2.5 4.5-5" stroke="white"/>',
   update: '<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>',
+  bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/>',
   image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/>',
 };
 const icon = (name, cls = '') => `<svg class="i ${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] || ''}</svg>`;
@@ -169,6 +170,7 @@ async function boot() {
 const PAGES = {
   dashboard: { label: 'Dashboard', icon: 'dashboard', sub: 'How the social side of Spencheck is doing', render: () => renderDashboard() },
   messages: { label: 'Messages', icon: 'messages', sub: 'Chat with users as the verified Spencheck account', render: () => renderMessages() },
+  notifications: { label: 'Notifications', icon: 'bell', sub: 'Push a notification to every phone, or to one user', render: () => renderNotifications() },
   promotions: { label: 'Banners & popups', icon: 'promo', sub: 'Changes reach phones on their next app start — no update needed', render: () => renderPromotions() },
   reports: { label: 'Reports', icon: 'flag', sub: 'Users and messages reported from the app', render: () => renderReports() },
   config: { label: 'App config', icon: 'settings', sub: 'Force update and chat settings', render: () => renderConfig() },
@@ -180,7 +182,7 @@ function renderNav() {
   const badges = { messages: s.unread_official, reports: s.open_reports };
   $('nav').innerHTML = `<div class="nav-label">Overview</div>` +
     ['dashboard'].map(navItem).join('') +
-    `<div class="nav-label">Engage</div>` + ['messages', 'promotions'].map(navItem).join('') +
+    `<div class="nav-label">Engage</div>` + ['messages', 'notifications', 'promotions'].map(navItem).join('') +
     `<div class="nav-label">Manage</div>` + ['reports', 'config'].map(navItem).join('');
   function navItem(k) {
     const p = PAGES[k];
@@ -470,6 +472,96 @@ function composeModal(draft = {}) {
       if (!all && threads[0]) openThread(threads[0].conversation_id);
     } catch (e) { if (btn) btn.disabled = false; }
   };
+}
+
+// ── Push notifications ─────────────────────────────────────────────────────
+async function renderNotifications() {
+  $('view').innerHTML = `<div class="grid two">
+    <div class="card">
+      <div class="card-head"><div><h2>New notification</h2><p>Shows in the phone’s notification shade, even when Spencheck is closed</p></div></div>
+      <div class="card-pad">
+        <div class="field"><label>Send to</label>
+          <div class="segmented" id="nfTo"><button type="button" class="on" data-to="all">Everyone</button><button type="button" data-to="user">One user</button></div>
+          <span class="hint" id="nfToHint">Every phone with Spencheck installed and notifications allowed.</span></div>
+        <div class="field" id="nfUserField" hidden><label for="nfUser">Username</label><input class="input" id="nfUser" placeholder="@username" autocomplete="off"></div>
+        <div class="field"><label for="nfTitle">Title <span class="muted small" id="nfTitleCount">0/65</span></label><input class="input" id="nfTitle" maxlength="65" placeholder="e.g. Your November wrap is ready"></div>
+        <div class="field"><label for="nfBody">Message <span class="muted small" id="nfBodyCount">0/240</span></label><textarea class="textarea" id="nfBody" maxlength="240" placeholder="One or two short lines."></textarea></div>
+        <div class="field"><label for="nfLink">Tapping it opens</label><select class="select" id="nfLink">${LINKS.map(([v, l]) => `<option value="${esc(v)}">${esc(v === '' ? 'The app (home)' : l)}</option>`).join('')}</select></div>
+        <div class="field" id="nfUrlField" hidden><label for="nfUrl">Web link</label><input class="input" id="nfUrl" placeholder="https://…"></div>
+        <div style="display:flex;justify-content:flex-end"><button class="btn btn-primary" id="nfSend">${icon('send')}Send notification</button></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div><h2>Preview</h2><p>Roughly how Android shows it</p></div></div>
+      <div class="card-pad" style="background:var(--bg-raised);border-radius:0 0 var(--radius) var(--radius)">
+        <div style="background:#1F2330;color:#F3F5F9;border-radius:22px;padding:14px 16px;box-shadow:var(--shadow);max-width:380px;margin:0 auto">
+          <div style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:#AAB2C2"><span class="logo" style="width:18px;height:18px;border-radius:6px;font-size:10px;box-shadow:none">S</span>Spencheck · now</div>
+          <div id="nfPvTitle" style="font-weight:600;margin-top:8px;font-size:14px">Title</div>
+          <div id="nfPvBody" style="color:#C9CFDA;font-size:13px;margin-top:2px;white-space:pre-wrap"></div>
+        </div>
+        <p class="hint" style="text-align:center;margin-top:14px">Delivered once. It can’t be edited or recalled after sending.</p>
+      </div>
+    </div></div>
+    <div class="card" style="margin-top:16px"><div class="card-head"><div><h2>History</h2><p>Last 100 sent from this panel</p></div></div><div class="table-wrap" id="nfHistory"></div></div>`;
+  let audience = 'all';
+  const pv = () => {
+    $('nfPvTitle').textContent = $('nfTitle').value || 'Title';
+    $('nfPvBody').textContent = $('nfBody').value;
+    $('nfTitleCount').textContent = `${$('nfTitle').value.length}/65`;
+    $('nfBodyCount').textContent = `${$('nfBody').value.length}/240`;
+  };
+  ['nfTitle', 'nfBody'].forEach((id) => $(id).addEventListener('input', pv));
+  $('nfLink').onchange = () => { $('nfUrlField').hidden = $('nfLink').value !== 'url'; };
+  $('nfTo').querySelectorAll('button').forEach((b) => b.onclick = () => {
+    audience = b.dataset.to;
+    $('nfTo').querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b));
+    $('nfUserField').hidden = audience !== 'user';
+    $('nfToHint').textContent = audience === 'user'
+      ? 'Their registered phones (they need a username, and to have opened the app since).'
+      : 'Every phone with Spencheck installed and notifications allowed.';
+  });
+  $('nfSend').onclick = async () => {
+    const title = $('nfTitle').value.trim();
+    const body = $('nfBody').value.trim();
+    const link = $('nfLink').value === 'url' ? $('nfUrl').value.trim() : $('nfLink').value;
+    const username = $('nfUser').value.trim();
+    if (!title || !body) { toast('Add a title and a message', 'err'); return; }
+    if ($('nfLink').value === 'url' && !/^https:\/\//.test(link)) { toast('Web links must start with https://', 'err'); return; }
+    if (audience === 'user' && !username) { toast('Enter a @username', 'err'); return; }
+    const ok = await confirmDialog(
+      audience === 'all' ? 'Send to everyone?' : `Send to @${username.replace(/^@/, '')}?`,
+      audience === 'all' ? 'Every phone with Spencheck gets this notification. It can’t be recalled.' : 'It arrives on their phone right away.',
+      'Send', audience === 'all');
+    if (!ok) return;
+    $('nfSend').disabled = true;
+    try {
+      const { data, error } = await sb.functions.invoke('admin-push', { body: { title, body, link, audience, username } });
+      if (error) {
+        let msg = error.message;
+        try { msg = (await error.context.json()).error || msg; } catch (e) { /* keep */ }
+        toast(msg, 'err');
+      } else {
+        toast(audience === 'all' ? 'Sent to everyone' : `Sent to ${data.devices} ${data.devices === 1 ? 'phone' : 'phones'}`);
+        $('nfTitle').value = ''; $('nfBody').value = ''; pv();
+      }
+    } finally {
+      $('nfSend').disabled = false;
+      loadHistory();
+    }
+  };
+  pv();
+  loadHistory();
+  async function loadHistory() {
+    const rows = await rpc('admin_list_notifications');
+    const tone = { sent: 'tone-green', failed: 'tone-red', sending: 'tone-amber' };
+    $('nfHistory').innerHTML = rows.length ? `<table><thead><tr><th>Notification</th><th>To</th><th class="hide-sm">Opens</th><th>Status</th><th class="hide-sm">Sent</th></tr></thead><tbody>${rows.map((r) => `
+      <tr><td><div class="cell-title">${esc(r.title)}</div><div class="cell-sub">${esc(r.body)}</div></td>
+        <td>${r.audience === 'all' ? 'Everyone' : '@' + esc(r.target_username)}</td>
+        <td class="hide-sm small muted">${esc(!r.link ? 'The app' : (LINKS.find(([v]) => v === r.link)?.[1] || r.link))}</td>
+        <td><span class="badge ${tone[r.status] || 'tone-slate'}" ${r.error ? `title="${esc(r.error)}"` : ''}>${esc(r.status)}</span></td>
+        <td class="hide-sm small muted">${esc(fmtDate(r.created_at))}</td></tr>`).join('')}</tbody></table>`
+      : `<div class="empty">${icon('bell')}<div>No notifications sent yet.</div></div>`;
+  }
 }
 
 // ── Banners & popups ───────────────────────────────────────────────────────
