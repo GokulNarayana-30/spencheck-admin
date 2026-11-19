@@ -36,6 +36,7 @@ grants nothing to anyone else. Never put the secret / service_role key here.
 | Only below app version | Reaches only builds with a lower version code (`versionCode` in pubspec's `+N`) |
 | App config → Force update | Builds below the minimum version code get a full-screen "Update required" gate |
 | Messages | Chat as the verified **Spencheck** account: message one @username or everyone (each gets a push), see replies with unread counts, answer them. "Users can reply" off turns it into a read-only announcements channel (the database enforces it) |
+| Notifications | Push notification to **everyone** (FCM topic `announcements`, which every install from this build on subscribes to) or to one @username's registered phones. Optional link opens the same in-app screens as banners. Sent through the `admin-push` Edge Function (re-checks you're an admin); history is kept in `admin_notifications` |
 | Reports | What users reported from chat/friends. "Remove user" deletes their social profile, friends and messages — not their Firebase account or on-phone money data |
 
 Changes reach phones on their next app start. Signed-out users don't see
