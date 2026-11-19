@@ -33,6 +33,7 @@ grants nothing to anyone else. Never put the secret / service_role key here.
 | Banners & popups → Home card | Card on Home under the shortcuts (DASH-057); user can close it |
 | Banners & popups → Popup when the app opens | Dialog on app start; once per user / once a day / every open |
 | Banners & popups → System popup | Same, but shown first; "Blocking" makes it full-screen and impossible to dismiss (maintenance) |
+| Layout: Image only | Just the picture, shown whole, with a small ✕ (no title, message or button); tapping it opens the link. The "name" is only for you. Blocking notices are always text |
 | Only below app version | Reaches only builds with a lower version code (`versionCode` in pubspec's `+N`) |
 | App config → Force update | Builds below the minimum version code get a full-screen "Update required" gate |
 | Messages | Chat as the verified **Spencheck** account: message one @username or everyone (each gets a push), see replies with unread counts, answer them. "Users can reply" off turns it into a read-only announcements channel (the database enforces it) |

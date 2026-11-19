@@ -680,7 +680,7 @@ async function renderPromotions() {
       const [label, tone] = promoStatus(p);
       return `<tr class="click" data-id="${esc(p.id)}"><td><div style="display:flex;gap:12px;align-items:center">
           ${p.image_url ? `<img class="thumb" src="${esc(p.image_url)}" alt="">` : `<div class="thumb kpi-icon tone-brand">${icon(p.slot === 'home_inline' ? 'promo' : 'phone')}</div>`}
-          <div style="min-width:0"><div class="cell-title">${esc(p.title)}${p.blocking ? ' <span class="badge plain tone-red">Blocking</span>' : ''}${p.sponsored ? ' <span class="badge plain tone-amber">Sponsored</span>' : ''}</div><div class="cell-sub">${esc(p.subtitle || '')}</div></div></div></td>
+          <div style="min-width:0"><div class="cell-title">${esc(p.title)}${p.layout === 'image' ? ' <span class="badge plain tone-violet">Image only</span>' : ''}${p.blocking ? ' <span class="badge plain tone-red">Blocking</span>' : ''}${p.sponsored ? ' <span class="badge plain tone-amber">Sponsored</span>' : ''}</div><div class="cell-sub">${esc(p.subtitle || '')}</div></div></div></td>
         <td>${esc(SLOT_LABEL[p.slot] || p.slot)}</td>
         <td class="hide-sm small muted">${esc(fmtDate(p.starts_at))} → ${esc(p.ends_at ? fmtDate(p.ends_at) : 'no end')}</td>
         <td><span class="badge ${tone}">${label}</span></td></tr>`;
@@ -703,11 +703,16 @@ function promoEditor(p) {
           <button type="button" data-slot="app_open_popup">App-open popup</button>
           <button type="button" data-slot="system_popup">System popup</button></div>
         <span class="hint" id="peSlotHint"></span></div>
-      <div class="field"><label for="peTitle">Title</label><input class="input" id="peTitle" maxlength="80"></div>
-      <div class="field"><label for="peSub">Message</label><textarea class="textarea" id="peSub" maxlength="300"></textarea></div>
+      <div class="field" id="peLayoutField"><label>Layout</label>
+        <div class="segmented" id="peLayout">
+          <button type="button" data-layout="card">Card with text</button>
+          <button type="button" data-layout="image">Image only</button></div>
+        <span class="hint" id="peLayoutHint"></span></div>
+      <div class="field"><label for="peTitle" id="peTitleLabel">Title</label><input class="input" id="peTitle" maxlength="80"></div>
+      <div class="field" id="peSubField"><label for="peSub">Message</label><textarea class="textarea" id="peSub" maxlength="300"></textarea></div>
       <div class="field-row">
-        <div class="field"><label for="peCta">Button label</label><input class="input" id="peCta" maxlength="30" placeholder="e.g. Try it"></div>
-        <div class="field"><label for="peLink">Button opens</label><select class="select" id="peLink">${LINKS.map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`).join('')}</select></div>
+        <div class="field" id="peCtaField"><label for="peCta">Button label</label><input class="input" id="peCta" maxlength="30" placeholder="e.g. Try it"></div>
+        <div class="field"><label for="peLink" id="peLinkLabel">Button opens</label><select class="select" id="peLink">${LINKS.map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`).join('')}</select></div>
       </div>
       <div class="field" id="peUrlField" hidden><label for="peUrl">Web link</label><input class="input" id="peUrl" placeholder="https://…"></div>
       <div class="field"><label for="peImage">Image <span class="muted">(optional)</span></label><input class="input" type="file" id="peImage" accept="image/*" style="padding-top:9px"></div>
@@ -731,6 +736,7 @@ function promoEditor(p) {
   const q = (id) => m.querySelector('#' + id);
   let slot = p?.slot && ['home_inline', 'app_open_popup', 'system_popup'].includes(p.slot) ? p.slot : 'home_inline';
   let imageUrl = p?.image_url || '';
+  let layout = p?.layout === 'image' ? 'image' : 'card';
   let file = null;
   q('peTitle').value = p?.title || '';
   q('peSub').value = p?.subtitle || '';
@@ -751,8 +757,24 @@ function promoEditor(p) {
     app_open_popup: 'A dialog when the app opens, at the frequency below.',
     system_popup: 'Shown before any other popup. Turn on “Blocking” for maintenance.',
   };
+  function setLayout(l) {
+    layout = l;
+    const img = l === 'image';
+    m.querySelectorAll('#peLayout button').forEach((b) => b.classList.toggle('on', b.dataset.layout === l));
+    q('peLayoutHint').textContent = img
+      ? 'Just your picture, shown whole with a small ✕. Tapping it opens the link below. Upload an image.'
+      : 'Picture (optional) with a title, message and button.';
+    q('peTitleLabel').textContent = img ? 'Name (only you see it)' : 'Title';
+    q('peSubField').hidden = img;
+    q('peCtaField').hidden = img;
+    q('peLinkLabel').textContent = img ? 'Tapping the image opens' : 'Button opens';
+    preview();
+  }
+  m.querySelectorAll('#peLayout button').forEach((b) => b.onclick = () => setLayout(b.dataset.layout));
   function setSlot(s) {
     slot = s;
+    // Blocking full-screen notices are always text.
+    q('peLayoutField').hidden = s === 'system_popup' && q('peBlocking').checked;
     m.querySelectorAll('#peSlot button').forEach((b) => b.classList.toggle('on', b.dataset.slot === s));
     q('peSlotHint').textContent = hints[s];
     q('peBlockingRow').hidden = s !== 'system_popup';
@@ -773,7 +795,14 @@ function promoEditor(p) {
     const spons = q('peSponsored').checked ? '<div class="p-spons">Sponsored</div>' : '';
     const home = `<div class="phone-hero"><span style="color:#98A2B3">This month</span><b>₹24,580</b></div><div class="phone-row"></div>`;
     let html;
-    if (slot === 'home_inline') {
+    const imgOnly = layout === 'image' && img && !(slot === 'system_popup' && q('peBlocking').checked);
+    if (layout === 'image' && !img) {
+      html = `${home}<div class="p-card" style="justify-content:center;color:#98A2B3">Upload an image to preview</div>`;
+    } else if (imgOnly && slot === 'home_inline') {
+      html = `${home}<div style="position:relative;margin-bottom:10px"><img src="${esc(img)}" alt="" style="width:100%;border-radius:16px;display:block"><span style="position:absolute;top:6px;right:6px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.5);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px">✕</span></div><div class="phone-row"></div>`;
+    } else if (imgOnly) {
+      html = `${home}<div class="phone-row"></div><div class="p-overlay"><div style="position:relative"><img src="${esc(img)}" alt="" style="max-width:100%;max-height:380px;border-radius:16px;display:block"><span style="position:absolute;top:-10px;right:-10px;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px">✕</span></div></div>`;
+    } else if (slot === 'home_inline') {
       html = `${home}<div class="p-card">${img ? `<img src="${esc(img)}" alt="">` : ''}<div style="flex:1;min-width:0">${spons}<div class="p-title">${title}</div>${sub ? `<div class="p-sub">${sub}</div>` : ''}${cta ? `<div class="p-cta">${cta}</div>` : ''}</div><span style="color:#98A2B3">✕</span></div><div class="phone-row"></div><div class="phone-row"></div>`;
     } else if (slot === 'system_popup' && q('peBlocking').checked) {
       html = `<div class="p-full"><div class="ic">${icon('alert')}</div><div class="p-title" style="font:700 16px var(--font-heading)">${title}</div>${sub ? `<div class="p-sub" style="font-size:12px">${sub}</div>` : ''}${cta ? `<div class="btnx">${cta}</div>` : ''}</div>`;
@@ -783,10 +812,13 @@ function promoEditor(p) {
     q('pePreview').innerHTML = html;
   }
   setSlot(slot);
+  setLayout(layout);
+  q('peBlocking').addEventListener('change', () => setSlot(slot));
 
   q('peSave').onclick = async () => {
     const title = q('peTitle').value.trim();
-    if (!title) { toast('Add a title', 'err'); q('peTitle').focus(); return; }
+    if (!title) { toast(layout === 'image' ? 'Add a name for it' : 'Add a title', 'err'); q('peTitle').focus(); return; }
+    if (layout === 'image' && !file && !imageUrl) { toast('Image only needs an image — upload one', 'err'); return; }
     const linkVal = q('peLink').value === 'url' ? q('peUrl').value.trim() : q('peLink').value;
     if (q('peLink').value === 'url' && !/^https:\/\//.test(linkVal)) { toast('Web links must start with https://', 'err'); return; }
     q('peSave').disabled = true;
@@ -805,6 +837,7 @@ function promoEditor(p) {
         ends_at: q('peEnd').value ? new Date(q('peEnd').value).toISOString() : null,
         frequency: q('peFreq').value, audience: below ? { below_version: Number(below) } : {},
         is_active: q('peActive').checked, blocking: q('peBlocking').checked, sponsored: q('peSponsored').checked,
+        layout,
       } });
       closeModal();
       toast(p ? 'Saved' : 'Published');
