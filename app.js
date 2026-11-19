@@ -206,6 +206,8 @@ function go(page) {
   renderNav();
   state.charts.forEach((c) => c.destroy());
   state.charts = [];
+  clearInterval(state.msgTimer);
+  state.msgTimer = null;
   PAGES[page].render();
 }
 
@@ -221,7 +223,7 @@ async function pollBadges() {
   try {
     state.stats = await sb.rpc('admin_stats').then((r) => r.data || state.stats);
     renderNav();
-    if (state.page === 'messages') refreshThreads();
+
   } catch (e) { /* offline — try again next tick */ }
 }
 
@@ -324,12 +326,32 @@ async function renderMessages() {
   $('newMsg').onclick = () => composeModal();
   await refreshThreads();
   if (state.openConv) openThread(state.openConv);
+  // Near-live while this page is open (admins aren't chat members, so they
+  // can't use Realtime on messages): the open chat every 4s, the list every 10s.
+  let tick = 0;
+  state.msgTimer = setInterval(async () => {
+    if (document.hidden || state.page !== 'messages') return;
+    tick++;
+    try {
+      if (state.openConv) await loadConvo(state.openConv, true);
+      if (tick % 3 === 0 || !state.openConv) await refreshThreads(true);
+    } catch (e) { /* offline — next tick */ }
+  }, 4000);
 }
 
 let threads = [];
-async function refreshThreads() {
+async function refreshThreads(quiet = false) {
   if (!$('threadList')) return;
-  threads = await rpc('admin_official_threads');
+  if (quiet) {
+    const { data, error } = await sb.rpc('admin_official_threads');
+    if (error || !data) return;
+    if (JSON.stringify(data) === JSON.stringify(threads)) return;
+    threads = data;
+    const unread = threads.reduce((n, t) => n + (t.unread || 0), 0);
+    if (state.stats.unread_official !== unread) { state.stats.unread_official = unread; renderNav(); }
+  } else {
+    threads = await rpc('admin_official_threads');
+  }
   $('threadList').innerHTML = threads.map((t) => {
     const preview = t.last_kind === 'image' ? '📷 Photo' : (t.last_body || '');
     return `<div class="thread-item ${state.openConv === t.conversation_id ? 'on' : ''} ${t.unread ? 'unread' : ''}" data-conv="${esc(t.conversation_id)}">
@@ -380,9 +402,20 @@ async function openThread(conv) {
   renderNav();
 }
 
-async function loadConvo(conv) {
-  const msgs = await rpc('admin_official_messages', { conv });
+let lastConvoKey = '';
+async function loadConvo(conv, quiet = false) {
+  let msgs;
+  if (quiet) {
+    const { data, error } = await sb.rpc('admin_official_messages', { conv });
+    if (error || !data) return;
+    msgs = data;
+  } else {
+    msgs = await rpc('admin_official_messages', { conv });
+  }
   if (state.openConv !== conv || !$('convoBody')) return;
+  const key = conv + ':' + msgs.length + ':' + (msgs[0]?.id || '');
+  if (quiet && key === lastConvoKey) return;
+  lastConvoKey = key;
   // Newest first (column-reverse), with a day label after each day's last message.
   let html = '';
   msgs.forEach((m, i) => {
